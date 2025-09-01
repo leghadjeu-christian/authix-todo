@@ -1,0 +1,19 @@
+[package]
+name = "web_application"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde_json = {version = "1.0",default-features = false,features = ["alloc"]}
+actix-web = "4.10.2"
+actix-rt = "2.10.0"
+futures = "0.3.31"
+serde = { version = "1.0.219", features = ["derive"] }
+actix-service = "2.0.3"
+diesel = { version = "2.2.11", features = ["postgres"] }
+dotenv = "0.15.0"
+bcrypt = "0.17.0"
+uuid = { version = "1.17.0", features = ["serde", "v4"] }
+jwt = "0.16.0"
+sha2 = "0.10.9"
+hmac = "0.12.1"
