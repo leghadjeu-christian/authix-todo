@@ -2,7 +2,7 @@ use serde_json::{Map, Value};
 
 pub trait Get {
     fn get(&self, title: &String, state: &Map<String, Value>) {
-        let item= state.get(title);
+        let item = state.get(title);
         match item {
             Some(result) => {
                 println!("\n\nItem: {}", title);

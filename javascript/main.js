@@ -1,4 +1,8 @@
-
+if (localStorage.getItem("user-token") == null) {
+    window.location.replace(document.location.origin + "/login/");
+} else {
+    getItems();
+}
 
 /**
  * Renders the to do items from the backend into a HTML div.
@@ -47,15 +51,19 @@ function apiCall(url, method) {
     xhr.withCredentials = true;
     xhr.addEventListener('readystatechange', function() {
         if (this.readyState === this.DONE) {
+            if (this.status === 401) {
+                window.location.replace(document.location.origin + "/login/");
+            } else {
             renderItems(JSON.parse(this.responseText)["pending_items"], "edit", "pendingItems", editItem);
             renderItems(JSON.parse(this.responseText)["done_items"], "delete", "doneItems", deleteItem);
             document.getElementById("completeNum").innerHTML = JSON.parse(this.responseText)["done_item_count"];
             document.getElementById("pendingNum").innerHTML = JSON.parse(this.responseText)["pending_item_count"];
+            }
         }
     });
-    xhr.open(method, url);
+    xhr.open(method, "/api/v1" + url);
     xhr.setRequestHeader('content-type', 'application/json');
-    xhr.setRequestHeader('user-token', 'token');
+    xhr.setRequestHeader('user-token', localStorage.getItem("user-token"));
     return xhr
 }
 
@@ -95,8 +103,6 @@ function getItems() {
     let call = apiCall("/item/get", 'GET');
     call.send()
 }
-
-getItems();
 
 document.getElementById("create-button").addEventListener(
     "click", createItem);
