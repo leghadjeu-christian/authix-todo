@@ -1,11 +1,11 @@
-<html>
-    <head>
-        <meta charSet="UTF-8"/>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-        <meta httpEquiv="X-UA-Compatiable" content="ie=edge"/>
-        <meta name="description" content="This is a simple to do app"/>
-        <title>To Do App</title>
-    </head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charSet="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta httpEquiv="X-UA-Compatible" content="ie=edge"/>
+    <meta name="description" content="This is a simple to-do app"/>
+    <title>To Do App - Login</title>
     <style>
         {{BASE_CSS}}
         {{CSS}}
@@ -13,29 +13,31 @@
             display: inline-block;
             background: #f7786b;
             border: none;
-            padding: 0.5rem;
-            padding-left: 2rem;
-            padding-right: 2rem;
+            padding: 0.5rem 2rem;
             color: white;
+            cursor: pointer;
+            margin: 10px;
         }
         .loginButtonStyle:hover {
             background: #f7686b;
             color: black;
         }
     </style>
-    <body>
-        <div class="mainContainer">
-            <h2 class="ContainerTitle" style="text-align:center;">Login</h2>
-            <p id="loginMessage" class="FeedbackMessage" style="text-align:center;"></p>
-            <form style="text-align:center;" action="submit">
-                <input type="text" value="" placeholder="Username" class="formInputContainer" id="defaultLoginFormUsername"><br>
-                <p></p>
-                <input type="password" value="" placeholder="Password" class="formInputContainer" id="defaultLoginFormPassword"><br><br>
-                <input type="button" value="Submit" class="loginButtonStyle" id="loginButton" style="text-align:center;">
-            </form>
-        </div>
-    </body>
+</head>
+<body>
+    <div class="mainContainer" style="text-align:center;">
+        <h2 class="ContainerTitle">Welcome</h2>
+        <p id="loginMessage" class="FeedbackMessage"></p>
+
+        <button class="loginButtonStyle" id="loginButton">Login</button>
+        <button class="loginButtonStyle" id="registerButton">Register</button>
+        <button class="loginButtonStyle" id="logoutButton">Logout</button>
+    </div>
+
+    <script src="/javascript/keycloak.js"></script> <!-- Ensure this path is correct -->
+    <script src="/javascript/main.js"></script>
     <script>
         {{JAVASCRIPT}}
     </script>
+</body>
 </html>

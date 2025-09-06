@@ -7,24 +7,30 @@
         <meta name="description" content="This is a simple to do app"/>
         <title>To Do App</title>
     </head>
-    <style>
-        {{BASE_CSS}}
-        {{CSS}}
-        HEADER_CSS
-    </style>
-    <body>
-        <div class="mainContainer">
-            HEADER_HTML
-            <h1>Done Items</h1>
-            <div id="doneItems"></div>
-            <h1>To Do Items</h1>
-            <div id="pendingItems"></div>
-            <div class="inputContainer">
-                <input type="text" id="name" placeholder="create to do item">
-                <div class="actionButton" id="create-button" value="Send">Create</div>
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/header.css">
+</head>
+<body>
+    <div class="mainContainer">
+        <div id="header-placeholder"></div>
+        <div class="todo-app-container">
+            <div class="item-list-section">
+                <h2>Done Items</h2>
+                <div id="doneItems" class="item-list"></div>
+            </div>
+            <div class="item-list-section">
+                <h2>To Do Items</h2>
+                <div id="pendingItems" class="item-list"></div>
+            </div>
+            <div class="inputContainer create-item-section">
+                <input type="text" id="name" placeholder="Create a new to-do item" class="item-input">
+                <button class="actionButton create-button" id="create-button">Create</button>
             </div>
         </div>
-    </body>
+    </div>
+</body>
+    <script src="/javascript/keycloak.js"></script>
     <script>
         {{JAVASCRIPT}}
     </script>

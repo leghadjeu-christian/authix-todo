@@ -12,9 +12,11 @@ use super::utils::return_state;
 use crate::schema::to_do;
 
 pub async fn create(req: HttpRequest) -> impl Responder {
-    let token: JwtToken = JwtToken::decode_from_request(
-        req.clone()).unwrap();
-        let title: String = req.match_info().get("title").unwrap().to_string();
+    let token: JwtToken = match JwtToken::decode_from_request(&req) {
+        Ok(token) => token,
+        Err(_) => return HttpResponse::Unauthorized().body("Unauthorized"),
+    };
+    let title: String = req.match_info().get("title").unwrap().to_string();
         let title_ref: String = title.clone();
         let mut connection = establish_connection();
         let items = to_do::table

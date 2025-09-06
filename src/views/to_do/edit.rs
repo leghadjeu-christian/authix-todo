@@ -21,7 +21,10 @@ use crate::schema::to_do;
 pub async fn edit(to_do_item: web::Json<ToDoItem>, req: HttpRequest) -> HttpResponse {
     
     let title_ref: String = to_do_item.title.clone();
-    let token: JwtToken = JwtToken::decode_from_request(req).unwrap();
+    let token: JwtToken = match JwtToken::decode_from_request(&req) {
+        Ok(token) => token,
+        Err(_) => return HttpResponse::Unauthorized().body("Unauthorized"),
+    };
     
     let mut connection = establish_connection();
     let results = to_do::table.filter(to_do::columns::title

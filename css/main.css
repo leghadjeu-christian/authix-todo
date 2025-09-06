@@ -1,37 +1,91 @@
 .itemContainer {
-background: #034f84;
-margin: 0.3rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #e9ecef; /* Light background for items */
+    border: 1px solid #dee2e6;
+    margin-bottom: 8px;
+    padding: 10px 15px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .itemContainer:hover {
-background: #034f99;
+    background: #e0e4e8; /* Slightly darker on hover */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .itemContainer p {
-color: white;
-display: inline-block;
-margin: 0.5rem;
-margin-right: 0.4rem;
-margin-left: 0.4rem;
+    color: #333;
+    margin: 0;
+    font-size: 1rem;
+    flex-grow: 1; /* Allows the title to take up available space */
 }
 
 .actionButton {
-display: inline-block;
-float: right;
-background: #f7786b;
-border: none;
-padding: 0.5rem;
-padding-left: 2rem;
-padding-right: 2rem;
-color: white;
+    background: #007bff; /* Primary blue for action buttons */
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    margin-left: 10px; /* Space between text and button */
+}
+
+.actionButton:hover {
+    background-color: #0056b3;
+    transform: translateY(-1px);
+}
+
+.actionButton:active {
+    transform: translateY(0);
+}
+
+/* Specific styling for edit and delete buttons */
+.itemContainer .actionButton {
+    background-color: #28a745; /* Green for edit/done */
+}
+
+.itemContainer .actionButton[id^="delete"] {
+    background-color: #dc3545; /* Red for delete */
 }
 
 .inputContainer {
-background: #034f84;
-margin: 0.3rem;
-margin-top: 2rem;
+    display: flex;
+    gap: 10px; /* Space between input and button */
+    padding: 15px;
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    margin-top: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
-.inputContainer input {
-display: inline-block;
-margin: 0.4rem;
+
+.item-input {
+    flex-grow: 1;
+    padding: 10px 15px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.item-input::placeholder {
+    color: #6c757d;
+}
+
+.item-input:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.create-button {
+    background-color: #6c757d; /* A more neutral color for create */
+}
+
+.create-button:hover {
+    background-color: #5a6268;
 }

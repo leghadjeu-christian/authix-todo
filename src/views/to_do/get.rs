@@ -14,7 +14,11 @@ use crate::auth::jwt::JwtToken;
 /// * (web::Json): all of the stored to do items
 use actix_web::web;
 
+use actix_web::HttpResponse;
+
 pub async fn get(req: HttpRequest) -> impl Responder {
-    let token: JwtToken = JwtToken::decode_from_request(req).unwrap();
-    return web::Json(return_state(&token.user_id));
+    match JwtToken::decode_from_request(&req) {
+        Ok(token) => HttpResponse::Ok().json(return_state(&token.user_id)),
+        Err(_) => HttpResponse::Unauthorized().body("Unauthorized"),
+    }
 }
