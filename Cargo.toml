@@ -14,10 +14,15 @@ diesel = { version = "2.2.11", features = ["postgres"] }
 dotenv = "0.15.0"
 bcrypt = "0.17.0"
 uuid = { version = "1.17.0", features = ["serde", "v4"] }
-jwt = "0.16.0"
+jsonwebtoken = "9.3.1"
 sha2 = "0.10.9"
 hmac = "0.12.1"
 log = "0.4.27"
 env_logger = "0.11.8"
 actix-web-middleware-keycloak-auth = "0.5"
 actix-files = "0.6"
+futures-util = "0.3.31"
+bytes = "1.10.1"
+reqwest = { version = "0.12.5", features = ["json"] }
+tokio = { version = "1.38.0", features = ["full"] }
+jsonwebkey = "0.3.5"

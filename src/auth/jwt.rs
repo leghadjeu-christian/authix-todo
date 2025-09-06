@@ -58,18 +58,10 @@ impl JwtToken {
         }
     }
 
-    pub fn decode_from_request(request: &HttpRequest) -> Result<JwtToken, &'static str> {
-        match request.headers().get("Authorization") {
-            Some(auth_header) => {
-                let auth_str = auth_header.to_str().map_err(|_| "Invalid Authorization header")?;
-                if auth_str.starts_with("Bearer ") {
-                    let encoded_token = auth_str["Bearer ".len()..].to_string();
-                    JwtToken::decode(encoded_token)
-                } else {
-                    Err("Authorization header missing Bearer prefix")
-                }
-            }
-            None => Err("Missing Authorization header")
+    pub fn decode_from_request(request: HttpRequest) -> Result<JwtToken, &'static str> {
+        match request.headers().get("user-token") {
+            Some(token) => JwtToken::decode(String::from(token.to_str().unwrap())),
+            None => Err("there is no token")
         }
     }
 }

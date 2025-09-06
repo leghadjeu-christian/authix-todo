@@ -1,95 +1,17 @@
-// #[macro_use] extern crate diesel;
-// extern crate dotenv;
-
-// use actix_web::{App, HttpServer, HttpResponse};
-// use actix_service::Service;
-// use futures::future::{ok, Either};
-
-// use log;
-// use env_logger;
-// use actix_web_middleware_keycloak_auth::{DecodingKey, KeycloakAuth};
-
-// mod schema;
-// mod database;
-// mod processes;
-// mod models;
-// mod state;
-// mod to_do;
-// mod json_serialization;
-// mod views;
-// mod auth;
-
-
-// #[actix_rt::main]
-// async fn main() -> std::io::Result<()> {
-    
-//     env_logger::init();
-//     HttpServer::new(|| {
-//         let keycloak_auth = KeycloakAuth::default_with_pk(
-//             DecodingKey::from_rsa_pem(include_bytes!("../keycloak_pub.pem")).unwrap()
-//         );
-        
-//         let app = App::new()
-//         .wrap_fn(|req, srv| {
-//             // srv => routing
-//             // req => service request
-            
-//             let request_url: String = String::from(*&req.uri().path().clone());
-//             let passed: bool;
-            
-//             if *&req.path().contains("/api/v1/item/") {
-//                 match auth::process_token(&req) {
-//                     Ok(_token) => {
-//                         passed = true;
-//                     },
-//                     Err(_message) => {
-//                         passed = false;
-//                     }
-//                 }
-//             }
-//             else {
-//                 passed = true;
-//             }
-            
-//             let end_result = match passed {
-//                 true => {
-//                     Either::Left(srv.call(req))
-//                 },
-//                 false => {
-//                     Either::Right(
-//                         ok(req.into_response(
-//                             HttpResponse::Unauthorized()
-//                             .finish()
-//                         ))
-//                     )
-//                 }
-//             };
-            
-//             async move {
-//                 let result = end_result.await?;
-//                 log::info!("{} -> {}", request_url, &result.status());
-//                 Ok(result)
-//             }
-//         })
-//         .wrap(keycloak_auth.clone()) // ← Insert here
-//         .configure(views::views_factory);
-//         return app
-//     })
-//     .bind("127.0.0.1:8000")?
-//     .run()
-//     .await
-// }
-
 #[macro_use]
 extern crate diesel;
 extern crate dotenv;
 
-use actix_web::{App, HttpServer, web, HttpResponse};
+use actix_web::{App, HttpServer, web, HttpResponse, Error};
+use actix_service::Service;
+use futures::future::{ok, Either, Ready};
+use log::{info, warn, error}; // Added for logging
 use actix_web_middleware_keycloak_auth::{DecodingKey, KeycloakAuth};
 use actix_files as fs; // Import actix_files
 
 use env_logger;
 mod auth;
+use crate::auth::keycloak_config::fetch_keycloak_openid_config; // Import the function to fetch OIDC config
 mod schema;
 mod database;
 mod processes;
@@ -98,9 +20,26 @@ mod state;
 mod to_do;
 mod json_serialization;
 mod views;
+mod middleware; // Add this line to include the middleware module
+use crate::middleware::request_logger::RequestLogger; // Import our custom RequestLogger middleware explicitly
+
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init();
+    info!("Starting Actix Web application...");
+
+    const KEYCLOAK_BASE_URL: &str = "http://localhost:8080/realms/myrealm";
+    let jwks_uri: String = match fetch_keycloak_openid_config(KEYCLOAK_BASE_URL).await {
+        Ok(uri) => uri,
+        Err(e) => {
+            error!("Failed to fetch JWKS URI from Keycloak: {}", e);
+            // Handle the error appropriately, perhaps by exiting or using a default.
+            // For now, we'll panic to clearly indicate a critical setup failure.
+            panic!("Critical error: Could not obtain JWKS URI from Keycloak.")
+        }
+    };
+    let jwks_uri_data = web::Data::new(jwks_uri); // Store JWKS URI in app state
+
 
     let keycloak_auth = KeycloakAuth::default_with_pk(
         DecodingKey::from_rsa_pem(include_bytes!("../keycloak_pub.pem")).unwrap()
@@ -108,11 +47,19 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         let keycloak_auth = keycloak_auth.clone();
-        App::new()
+        let jwks_uri_data = jwks_uri_data.clone(); // Clone for each worker
+        info!("Setting up application routes and middleware.");
+        let app = App::new()
+            .app_data(jwks_uri_data.clone()) // Add JWKS URI to app data
             .service(fs::Files::new("/javascript", "./javascript").show_files_listing()) // Serve static files
+            .service(fs::Files::new("/css", "./css").show_files_listing()) // Serve CSS files
+            .service(fs::Files::new("/templates", "./templates").show_files_listing()) // Serve templates (including header.html)
+            .wrap(RequestLogger) // Use our custom RequestLogger middleware
+
             .configure(move |cfg| {
                 views::views_factory(cfg, keycloak_auth.clone())
-            })
+            });
+        return app
     })
     .bind("127.0.0.1:8000")?
     .run()

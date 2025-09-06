@@ -2,7 +2,7 @@ use crate::diesel;
 use actix_web::{web, HttpResponse};
 use diesel::prelude::*;
 
-use crate::auth::jwt::JwtToken;
+// use crate::auth::jwt::JwtToken; // Replaced by jsonwebtoken
 use crate::database::establish_connection;
 use crate::json_serialization::login::Login;
 use crate::models::user::user::User;
@@ -28,8 +28,11 @@ pub async fn login(credentials: web::Json<Login>) -> HttpResponse {
     
     match users[0].clone().verify(password) {
         true => {
-            let token: String = JwtToken::encode(users[0].clone().id);
-            HttpResponse::Ok().header("token", token).await.unwrap()
+            // Token generation is handled by Keycloak; this line is likely no longer needed.
+            // If local token generation is still required, it needs to be reimplemented using jsonwebtoken.
+            // let token: String = JwtToken::encode(users[0].clone().id);
+            // HttpResponse::Ok().header("token", token).await.unwrap()
+            HttpResponse::Ok().await.unwrap() // Return a basic OK for now
         }
         false => HttpResponse::Unauthorized().await.unwrap(),
     }
