@@ -9,8 +9,7 @@ use futures_util::{
 use std::{rc::Rc, cell::RefCell};
 use log::{info, warn, error};
 use bytes::{BytesMut, BufMut};
-use crate::auth; // Import the auth module
-use crate::auth::processes::Claims; // Import Claims struct directly from processes
+use crate::auth; // Import the auth module for token processing
 use actix_web::body::{MessageBody, BoxBody}; // To ensure B can be BoxBody
 use actix_web::HttpMessage; // For extensions_mut()
 
@@ -108,9 +107,8 @@ where
                 };
 
                 match auth::process_token(&new_req, jwks_uri_data).await { // Pass jwks_uri_data and await
-                    Ok(claims) => {
-                        info!("Token processed successfully for: {}. User ID: {}", request_url, claims.sub);
-                        new_req.extensions_mut().insert(claims); // Store claims in request extensions
+                    Ok(_) => {
+                        info!("Token processed successfully for: {}", request_url);
                         passed = true;
                     },
                     Err(message) => {
@@ -121,8 +119,7 @@ where
             } else {
                 passed = true;
             }
-            
-            info!("RequestLogger: 'passed' status before decision: {}", passed); // New log
+
             let res = if passed {
                 service.call(new_req).await?.map_into_boxed_body()
             } else {

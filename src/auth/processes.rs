@@ -6,14 +6,13 @@ use reqwest;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
-pub struct Claims {
+struct Claims {
     // Define your JWT claims here. For Keycloak, typical claims include:
-    pub aud: String,
-    pub exp: usize,
-    pub iat: usize,
-    pub iss: String,
-    pub sub: String,
-    pub azp: String, // Add azp claim
+    aud: String,
+    exp: usize,
+    iat: usize,
+    iss: String,
+    sub: String,
     // Add other claims as needed, e.g., preferred_username, realm_access, etc.
 }
 
@@ -25,7 +24,7 @@ pub struct Claims {
 ///
 /// # Returns
 /// * (Result<String, String>): "passed" if the token is valid, an error message if not.
-pub async fn check_password(token_string: String, jwks_uri: &str) -> Result<Claims, String> {
+pub async fn check_password(token_string: String, jwks_uri: &str) -> Result<String, String> {
     info!("Attempting to check password/validate token using JWKS from: {}", jwks_uri);
 
     // 1. Decode the header to get the `kid` (Key ID)
@@ -86,15 +85,13 @@ pub async fn check_password(token_string: String, jwks_uri: &str) -> Result<Clai
 
     // 5. Validate the token
     let mut validation = Validation::new(Algorithm::RS256); // Keycloak typically uses RS256
-    validation.set_audience(&["account", "myclient"]); // Set expected audiences
-    // validation.required_spec_claims.insert("azp".to_string()); // Temporarily remove 'azp' requirement
+    // You might need to set `validation.validate_aud = false;` or specify expected audiences if `aud` claim is not a single string or if there are multiple valid audiences.
     // validation.set_issuer(&["http://localhost:8080/realms/myrealm"]); // Optional: Validate issuer
 
     match decode::<Claims>(&token_string, &decoding_key, &validation) {
         Ok(token_data) => {
-            info!("Token validation successful.");
-            info!("Validated Claims: {:?}", token_data.claims); // Log the validated claims
-            Ok(token_data.claims)
+            info!("Token validation successful. Claims: {:?}", token_data.claims);
+            Ok("passed".to_string())
         },
         Err(e) => {
             warn!("Token validation failed: {}", e);
@@ -111,29 +108,24 @@ pub async fn check_password(token_string: String, jwks_uri: &str) -> Result<Clai
 /// # Returns
 /// * (Result<String, &'templates str>): processed token if successful, error message if not
 pub fn extract_header_token(request: &ServiceRequest) -> Result<String, &'static str> {
-    info!("Attempting to extract Authorization header token.");
-    match request.headers().get("Authorization") {
-        Some(token_value) => {
-            let token_str = match token_value.to_str() {
-                Ok(s) => s,
-                Err(_) => {
-                    warn!("Authorization header contains invalid characters.");
-                    return Err("Invalid Authorization header");
-                }
-            };
-
-            if token_str.starts_with("Bearer ") {
-                let token = token_str.trim_start_matches("Bearer ").to_string();
-                info!("'Authorization: Bearer' token found and extracted.");
-                Ok(token)
-            } else {
-                warn!("Authorization header found but does not start with 'Bearer '.");
-                Err("Invalid Authorization header format")
+    info!("Attempting to extract header token.");
+    match request.headers().get("user-token") {
+        Some(token) => {
+            info!("'user-token' header found.");
+            match token.to_str() {
+                Ok(processed_password) => {
+                    info!("Token successfully processed from header.");
+                    Ok(String::from(processed_password))
+                },
+                Err(_processed_password) => {
+                    error!("Failed to process token from header (to_str conversion).");
+                    Err("there was an error processing token")
+                },
             }
         },
         None => {
-            warn!("'Authorization' header not found in request.");
-            Err("No Authorization header found")
+            warn!("'user-token' header not found in request.");
+            Err("there is no token")
         },
     }
 }

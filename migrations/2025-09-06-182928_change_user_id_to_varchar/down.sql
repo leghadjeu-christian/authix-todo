@@ -1,4 +1,0 @@
-ALTER TABLE to_do DROP CONSTRAINT to_do_user_id_fkey;
-ALTER TABLE to_do DROP COLUMN user_id;
-ALTER TABLE to_do ADD COLUMN user_id INTEGER NOT NULL DEFAULT 1;
-ALTER TABLE to_do ADD CONSTRAINT user_id FOREIGN KEY (user_id) REFERENCES users (id);

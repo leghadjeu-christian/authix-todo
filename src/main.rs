@@ -6,7 +6,7 @@ use actix_web::{App, HttpServer, web, HttpResponse, Error};
 use actix_service::Service;
 use futures::future::{ok, Either, Ready};
 use log::{info, warn, error}; // Added for logging
-// use actix_web_middleware_keycloak_auth::{DecodingKey, KeycloakAuth}; // Removed
+use actix_web_middleware_keycloak_auth::{DecodingKey, KeycloakAuth};
 use actix_files as fs; // Import actix_files
 
 use env_logger;
@@ -41,13 +41,12 @@ async fn main() -> std::io::Result<()> {
     let jwks_uri_data = web::Data::new(jwks_uri); // Store JWKS URI in app state
 
 
-    // Removed KeycloakAuth initialization
-    // let keycloak_auth = KeycloakAuth::default_with_pk(
-    //     DecodingKey::from_rsa_pem(include_bytes!("../keycloak_pub.pem")).unwrap()
-    // );
+    let keycloak_auth = KeycloakAuth::default_with_pk(
+        DecodingKey::from_rsa_pem(include_bytes!("../keycloak_pub.pem")).unwrap()
+    );
 
     HttpServer::new(move || {
-        // let keycloak_auth = keycloak_auth.clone(); // Removed
+        let keycloak_auth = keycloak_auth.clone();
         let jwks_uri_data = jwks_uri_data.clone(); // Clone for each worker
         info!("Setting up application routes and middleware.");
         let app = App::new()
@@ -58,7 +57,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(RequestLogger) // Use our custom RequestLogger middleware
 
             .configure(move |cfg| {
-                views::views_factory(cfg) // Pass only cfg, not keycloak_auth
+                views::views_factory(cfg, keycloak_auth.clone())
             });
         return app
     })
