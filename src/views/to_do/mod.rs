@@ -1,5 +1,4 @@
 use actix_web::{web};
-use actix_web_middleware_keycloak_auth::{KeycloakAuth, AlwaysReturnPolicy};
 
 mod utils;
 mod create;
@@ -12,15 +11,13 @@ use super::path::Path;
 ///
 /// # Arguments
 /// * app: &mut web::ServiceConfig - the app service config
-/// * keycloak_auth: KeycloakAuth - middleware for protecting these routes
-pub fn item_factory(app: &mut web::ServiceConfig, keycloak_auth: KeycloakAuth<AlwaysReturnPolicy>) {
+pub fn item_factory(app: &mut web::ServiceConfig) {
     // define the path struct
     let base_path: Path = Path { prefix: String::from("/item"), backend: true };
 
     // apply auth middleware only to this scoped group
     app.service(
         web::scope("/api/v1")
-            .wrap(keycloak_auth)
             .route(&base_path.define(String::from("/create/{title}")), web::post().to(create::create))
             .route(&base_path.define(String::from("/get")), web::get().to(get::get))
             .route(&base_path.define(String::from("/edit")), web::put().to(edit::edit))

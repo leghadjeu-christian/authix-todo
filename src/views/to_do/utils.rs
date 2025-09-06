@@ -14,18 +14,21 @@ use crate::schema::to_do;
 /// Gets all the to do items from the state JSON file and processes them to be serialized.
 ///
 /// # Arguments
-/// user_id (&i32): the user id belonging to the request
+/// user_id (&String): the user id belonging to the request
 ///
 /// # Returns
 /// * (ToDoItems): to do items sorted into Done and Pending with count numbers
-pub fn return_state(user_id: &i32) -> ToDoItems {
+pub fn return_state(user_id: &str) -> ToDoItems {
     let mut connection = establish_connection();
 
     let items = to_do::table
         .order(to_do::columns::id.asc())
         .filter(to_do::columns::user_id.eq(&user_id))
+        .select(to_do::all_columns)
         .load::<Item>(&mut connection)
         .unwrap();
+
+    log::info!("Retrieved {} items for user_id: {}", items.len(), user_id);
 
     let mut array_buffer = Vec::new();
 
