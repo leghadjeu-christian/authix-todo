@@ -14,16 +14,16 @@ use crate::schema::to_do;
 /// Gets all the to do items from the state JSON file and processes them to be serialized.
 ///
 /// # Arguments
-/// user_id (&str): the user id belonging to the request
+/// user_id (&i32): the user id belonging to the request
 ///
 /// # Returns
 /// * (ToDoItems): to do items sorted into Done and Pending with count numbers
-pub fn return_state(user_id: &str) -> ToDoItems {
+pub fn return_state(user_id: &i32) -> ToDoItems {
     let mut connection = establish_connection();
 
     let items = to_do::table
         .order(to_do::columns::id.asc())
-        .filter(to_do::columns::user_id.eq(user_id)) // Changed to use user_id directly
+        .filter(to_do::columns::user_id.eq(&user_id))
         .load::<Item>(&mut connection)
         .unwrap();
 

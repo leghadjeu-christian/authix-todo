@@ -1,6 +1,6 @@
 use serde::Deserialize;
 use reqwest;
-use log::{info, error};
+use log::{info, warn, error};
 
 #[derive(Debug, Deserialize)]
 pub struct OpenIdConfig {

@@ -2,8 +2,10 @@
 extern crate diesel;
 extern crate dotenv;
 
-use actix_web::{App, HttpServer, web};
-use log::{info, error}; // Added for logging
+use actix_web::{App, HttpServer, web, HttpResponse, Error};
+use actix_service::Service;
+use futures::future::{ok, Either, Ready};
+use log::{info, warn, error}; // Added for logging
 use actix_web_middleware_keycloak_auth::{DecodingKey, KeycloakAuth};
 use actix_files as fs; // Import actix_files
 

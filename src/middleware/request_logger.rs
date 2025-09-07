@@ -1,6 +1,6 @@
 use actix_web::{
     dev::{Service, ServiceRequest, ServiceResponse, Payload},
-    Error, HttpResponse,
+    Error, web::Bytes, HttpResponse,
 };
 use futures_util::{
     future::{self, LocalBoxFuture, Ready},
@@ -10,7 +10,6 @@ use std::{rc::Rc, cell::RefCell};
 use log::{info, warn, error};
 use bytes::{BytesMut, BufMut};
 use crate::auth; // Import the auth module for token processing
-use crate::auth::processes::Claims; // Import Claims struct
 use actix_web::body::{MessageBody, BoxBody}; // To ensure B can be BoxBody
 use actix_web::HttpMessage; // For extensions_mut()
 
@@ -26,7 +25,7 @@ impl<S, B> actix_web::dev::Transform<S, ServiceRequest> for RequestLogger
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
-    B: MessageBody + 'static, // Add this back
+    B: MessageBody + 'static, // B must implement MessageBody
 {
     type Response = ServiceResponse<BoxBody>; // Changed to BoxBody
     type Error = Error;
@@ -49,7 +48,7 @@ impl<S, B> Service<ServiceRequest> for RequestLoggerService<S>
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
-    B: MessageBody + 'static, // Add this back
+    B: MessageBody + 'static, // B must implement MessageBody
 {
     type Response = ServiceResponse<BoxBody>; // Changed to BoxBody
     type Error = Error;
@@ -63,7 +62,7 @@ where
         let service = self.service.clone();
 
         Box::pin(async move {
-            let (http_req, mut payload) = req.into_parts();
+            let (mut http_req, mut payload) = req.into_parts();
             
             let request_url = http_req.uri().path().to_string();
             let request_method = http_req.method().to_string();
@@ -88,52 +87,49 @@ where
             // Store the body in http_req's extensions before reconstructing the ServiceRequest
             http_req.extensions_mut().insert(body.clone());
 
-            // Reconstruct the ServiceRequest with the modified http_req and a new payload from the read body
-            let mut new_req = ServiceRequest::from_parts(http_req, Payload::from(body.clone()));
+            // Reconstruct the ServiceRequest with the modified http_req and an empty payload
+            let mut new_req = ServiceRequest::from_parts(http_req, Payload::None);
 
-            let res = if request_url.contains("/api/v1/item/") {
+            let passed: bool;
+            if request_url.contains("/api/v1/item/") {
                 info!("API item path detected: {}", request_url);
                 // Retrieve jwks_uri from app data
                 let jwks_uri_data = match new_req.app_data::<actix_web::web::Data<String>>() {
                     Some(data) => data.clone(),
                     None => {
                         error!("JWKS URI not found in application data.");
-                        // Handle the error: return InternalServerError immediately
-                        let (original_http_req, _) = new_req.into_parts();
+                        // Handle the error: perhaps return Unauthorized immediately
                         return Ok(ServiceResponse::new(
-                            original_http_req,
+                            new_req.into_parts().0,
                             HttpResponse::InternalServerError().finish().map_into_boxed_body(),
                         ));
                     }
                 };
 
-                // Take http_req parts to create a new ServiceRequest for auth::process_token
-                let (mut http_req_for_auth, _) = new_req.into_parts();
-
-                // Create a temporary ServiceRequest with a cloned body for auth::process_token
-                // Note: The body is read and stored in `body` earlier, and will be re-inserted as a new payload
-                match auth::process_token(&ServiceRequest::from_parts(http_req_for_auth.clone(), Payload::from(body.clone())), jwks_uri_data).await {
-                    Ok(claims) => {
-                        info!("Token processed successfully for: {}. User: {}", request_url, claims.sub);
-                        http_req_for_auth.extensions_mut().insert(claims.clone()); // Insert claims into extensions
-                        // Create new req for next service with modified http_req and a new payload from the read body
-                        let req_with_claims = ServiceRequest::from_parts(http_req_for_auth, Payload::from(body.clone())); // Re-create payload
-                        service.call(req_with_claims).await?.map_into_boxed_body()
+                match auth::process_token(&new_req, jwks_uri_data).await { // Pass jwks_uri_data and await
+                    Ok(_) => {
+                        info!("Token processed successfully for: {}", request_url);
+                        passed = true;
                     },
                     Err(message) => {
                         warn!("Token processing failed for {}: {}", request_url, message);
-                        ServiceResponse::new(
-                            http_req_for_auth,
-                            HttpResponse::Unauthorized().finish().map_into_boxed_body(),
-                        )
+                        passed = false;
                     }
                 }
             } else {
-                info!("Non-API item path detected: {}", request_url);
+                passed = true;
+            }
+
+            let res = if passed {
                 service.call(new_req).await?.map_into_boxed_body()
+            } else {
+                error!("Unauthorized access attempt to: {}", request_url);
+                // When unauthorized, use the http_req from new_req to build the response.
+                let (original_http_req, _) = new_req.into_parts();
+                ServiceResponse::new(original_http_req, HttpResponse::Unauthorized().finish().map_into_boxed_body())
             };
             
-            info!(
+            log::info!(
                 "{} {} -> {} (Body: '{}')",
                 request_method, request_url, &res.status(), body_str
             );

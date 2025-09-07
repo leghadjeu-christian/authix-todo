@@ -5,7 +5,7 @@ diesel::table! {
         id -> Int4,
         title -> Varchar,
         status -> Varchar,
-        user_id -> Varchar,
+        user_id -> Int4,
     }
 }
 
@@ -18,5 +18,7 @@ diesel::table! {
         unique_id -> Varchar,
     }
 }
+
+diesel::joinable!(to_do -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(to_do, users,);
