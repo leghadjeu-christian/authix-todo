@@ -1,24 +1,33 @@
-use actix_web::Responder;
-use actix_web::HttpRequest;
+use actix_web::{web, Responder, HttpRequest, HttpResponse};
+use actix_web::HttpMessage; // Import HttpMessage for extensions()
+use log::{warn, info};
 
 use super::utils::return_state;
-// use crate::auth::jwt::JwtToken; // Replaced by jsonwebtoken
+use crate::auth::processes::Claims;
 
-
-/// This view gets all of the saved to do items that are stored in the state.json file.
+/// This view gets all of the saved to do items for the authenticated user.
 ///
 /// # Arguments
-/// None
+/// * req (HttpRequest): The incoming HTTP request, containing user claims in its extensions.
 ///
 /// # Returns
-/// * (web::Json): all of the stored to do items
-use actix_web::web;
-
+/// * (web::Json): all of the stored to do items for the authenticated user
+/// * (HttpResponse::Unauthorized): if the user is not authenticated
 pub async fn get(req: HttpRequest) -> impl Responder {
-    // The user_id should be extracted from the validated token in the middleware
-    // and made available in the request extensions or app data.
-    // For now, this logic is commented out.
-    // let token: JwtToken = JwtToken::decode_from_request(req).unwrap();
-    let user_id = 1; // Placeholder: Replace with actual user_id from token in future
-    return web::Json(return_state(&user_id));
+    info!("Attempting to retrieve to-do items for an authenticated user.");
+
+    let claims = req.extensions().get::<Claims>().cloned();
+
+    let user_id = match claims {
+        Some(c) => {
+            info!("Claims found in request extensions. User ID: {}", c.sub);
+            c.sub
+        },
+        None => {
+            warn!("Claims not found in request extensions. Unauthorized access attempt.");
+            return HttpResponse::Unauthorized().body("Unauthorized: Missing user claims");
+        }
+    };
+
+    HttpResponse::Ok().json(return_state(&user_id))
 }

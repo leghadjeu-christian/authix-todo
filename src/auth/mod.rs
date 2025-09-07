@@ -1,21 +1,23 @@
-use actix_web::dev::ServiceRequest;
-use actix_web::web; // Add this for web::Data
-// pub mod jwt; // No longer needed
-mod processes;
-pub mod keycloak_config; // Added for Keycloak OpenID Connect configuration fetching
-use log::{info, warn, error}; // Added error for consistency
+use actix_web::{web, HttpRequest};
+use actix_web::HttpMessage; // Import HttpMessage trait for extensions_mut()
+use log::{info, warn, error};
+pub mod processes; // Make processes module public
+pub mod keycloak_config;
+use crate::auth::processes::Claims;
 
-pub async fn process_token(request: &ServiceRequest, jwks_uri: web::Data<String>) -> Result<String, String> {
+pub async fn process_token(request: &HttpRequest, jwks_uri: web::Data<String>) -> Result<Claims, String> {
     info!("Attempting to process token in auth::mod.rs");
-    let jwks_uri_str: &str = &jwks_uri; // Dereference web::Data to &String, then to &str
+    let jwks_uri_str: &str = &jwks_uri;
 
     match processes::extract_header_token(request) {
         Ok(token) => {
-            info!("Header token extracted successfully.");
-            match processes::check_password(token, jwks_uri_str).await { // Pass jwks_uri and await
-                Ok(_) => {
-                    info!("Token validation successful.");
-                    Ok(String::from("passed"))
+            info!("Authorization header token extracted successfully.");
+            match processes::check_password(token, jwks_uri_str).await {
+                Ok(claims) => {
+                    info!("Token validation successful. User ID: {}", claims.sub);
+                    // Insert claims into the request extensions for later use by route handlers
+                    request.extensions_mut().insert(claims.clone());
+                    Ok(claims)
                 },
                 Err(message) => {
                     warn!("Token validation failed: {}", message);
@@ -25,7 +27,7 @@ pub async fn process_token(request: &ServiceRequest, jwks_uri: web::Data<String>
         },
         Err(message) => {
             warn!("Token extraction failed: {}", message);
-            Err(message.to_string()) // Convert &'static str to String
+            Err(message.to_string())
         }
     }
 }

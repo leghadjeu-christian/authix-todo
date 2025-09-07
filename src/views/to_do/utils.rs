@@ -18,12 +18,12 @@ use crate::schema::to_do;
 ///
 /// # Returns
 /// * (ToDoItems): to do items sorted into Done and Pending with count numbers
-pub fn return_state(user_id: &i32) -> ToDoItems {
+pub fn return_state(user_id: &str) -> ToDoItems {
     let mut connection = establish_connection();
 
     let items = to_do::table
         .order(to_do::columns::id.asc())
-        .filter(to_do::columns::user_id.eq(&user_id))
+        .filter(to_do::columns::user_id.eq(user_id))
         .load::<Item>(&mut connection)
         .unwrap();
 

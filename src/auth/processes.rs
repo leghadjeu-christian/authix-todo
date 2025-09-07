@@ -1,19 +1,23 @@
-use actix_web::dev::ServiceRequest;
+use actix_web::HttpRequest;
 use log::{info, warn, error};
 use jsonwebtoken::{decode, decode_header, DecodingKey, Validation, Algorithm};
 use jsonwebtoken::jwk::JwkSet; // Correctly import JwkSet from jsonwebtoken
 use reqwest;
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
-struct Claims {
-    // Define your JWT claims here. For Keycloak, typical claims include:
-    aud: String,
-    exp: usize,
-    iat: usize,
-    iss: String,
-    sub: String,
-    // Add other claims as needed, e.g., preferred_username, realm_access, etc.
+#[derive(Debug, Deserialize, Clone)]
+pub struct Claims {
+    pub aud: String,
+    pub exp: usize,
+    pub iat: usize,
+    pub iss: String,
+    pub sub: String,
+    pub azp: String,
+    pub preferred_username: String,
+    pub name: String,
+    pub given_name: String,
+    pub family_name: String,
+    pub email: String,
 }
 
 /// Checks to see if the token matches and is valid using dynamic JWKS.
@@ -23,8 +27,8 @@ struct Claims {
 /// * jwks_uri (&str): The URI to fetch the JSON Web Key Set from.
 ///
 /// # Returns
-/// * (Result<String, String>): "passed" if the token is valid, an error message if not.
-pub async fn check_password(token_string: String, jwks_uri: &str) -> Result<String, String> {
+/// * (Result<Claims, String>): Claims if the token is valid, an error message if not.
+pub async fn check_password(token_string: String, jwks_uri: &str) -> Result<Claims, String> {
     info!("Attempting to check password/validate token using JWKS from: {}", jwks_uri);
 
     // 1. Decode the header to get the `kid` (Key ID)
@@ -88,10 +92,14 @@ pub async fn check_password(token_string: String, jwks_uri: &str) -> Result<Stri
     // You might need to set `validation.validate_aud = false;` or specify expected audiences if `aud` claim is not a single string or if there are multiple valid audiences.
     // validation.set_issuer(&["http://localhost:8080/realms/myrealm"]); // Optional: Validate issuer
 
+    validation.required_spec_claims.retain(|claim| claim != "exp"); // Remove "exp" from required claims if not needed
+    validation.validate_aud = false; // Temporarily disable audience validation for debugging
+    validation.set_issuer(&["http://localhost:8080/realms/myrealm"]); // Optional: Validate issuer
+
     match decode::<Claims>(&token_string, &decoding_key, &validation) {
         Ok(token_data) => {
             info!("Token validation successful. Claims: {:?}", token_data.claims);
-            Ok("passed".to_string())
+            Ok(token_data.claims) // Return the Claims struct
         },
         Err(e) => {
             warn!("Token validation failed: {}", e);
@@ -107,25 +115,30 @@ pub async fn check_password(token_string: String, jwks_uri: &str) -> Result<Stri
 ///
 /// # Returns
 /// * (Result<String, &'templates str>): processed token if successful, error message if not
-pub fn extract_header_token(request: &ServiceRequest) -> Result<String, &'static str> {
-    info!("Attempting to extract header token.");
-    match request.headers().get("user-token") {
+pub fn extract_header_token(request: &HttpRequest) -> Result<String, &'static str> {
+    info!("Attempting to extract Authorization header token.");
+    match request.headers().get("Authorization") {
         Some(token) => {
-            info!("'user-token' header found.");
+            info!("'Authorization' header found.");
             match token.to_str() {
-                Ok(processed_password) => {
-                    info!("Token successfully processed from header.");
-                    Ok(String::from(processed_password))
+                Ok(token_str) => {
+                    if token_str.starts_with("Bearer ") {
+                        info!("Bearer token successfully extracted.");
+                        Ok(token_str["Bearer ".len()..].to_string())
+                    } else {
+                        warn!("Authorization header does not start with 'Bearer '.");
+                        Err("Invalid Authorization header format")
+                    }
                 },
-                Err(_processed_password) => {
+                Err(_) => {
                     error!("Failed to process token from header (to_str conversion).");
-                    Err("there was an error processing token")
+                    Err("Error processing token")
                 },
             }
         },
         None => {
-            warn!("'user-token' header not found in request.");
-            Err("there is no token")
+            warn!("'Authorization' header not found in request.");
+            Err("No Authorization header")
         },
     }
 }

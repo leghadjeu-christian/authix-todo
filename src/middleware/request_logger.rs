@@ -63,7 +63,7 @@ where
 
         Box::pin(async move {
             let (mut http_req, mut payload) = req.into_parts();
-            
+
             let request_url = http_req.uri().path().to_string();
             let request_method = http_req.method().to_string();
             let mut header_info = String::new();
@@ -84,31 +84,29 @@ where
                 request_method, request_url, header_info, body_str
             );
 
-            // Store the body in http_req's extensions before reconstructing the ServiceRequest
+            // Store the body in http_req's extensions
             http_req.extensions_mut().insert(body.clone());
-
-            // Reconstruct the ServiceRequest with the modified http_req and an empty payload
-            let mut new_req = ServiceRequest::from_parts(http_req, Payload::None);
 
             let passed: bool;
             if request_url.contains("/api/v1/item/") {
                 info!("API item path detected: {}", request_url);
                 // Retrieve jwks_uri from app data
-                let jwks_uri_data = match new_req.app_data::<actix_web::web::Data<String>>() {
+                let jwks_uri_data = match http_req.app_data::<actix_web::web::Data<String>>() {
                     Some(data) => data.clone(),
                     None => {
                         error!("JWKS URI not found in application data.");
-                        // Handle the error: perhaps return Unauthorized immediately
+                        // Handle the error: return InternalServerError immediately
                         return Ok(ServiceResponse::new(
-                            new_req.into_parts().0,
+                            http_req,
                             HttpResponse::InternalServerError().finish().map_into_boxed_body(),
                         ));
                     }
                 };
 
-                match auth::process_token(&new_req, jwks_uri_data).await { // Pass jwks_uri_data and await
-                    Ok(_) => {
-                        info!("Token processed successfully for: {}", request_url);
+                // Pass http_req directly to process_token
+                match auth::process_token(&http_req, jwks_uri_data).await {
+                    Ok(claims) => {
+                        info!("Token processed successfully for: {}. User ID: {}", request_url, claims.sub);
                         passed = true;
                     },
                     Err(message) => {
@@ -121,14 +119,14 @@ where
             }
 
             let res = if passed {
+                // Reconstruct the ServiceRequest with the modified http_req and the original payload (now empty)
+                let new_req = ServiceRequest::from_parts(http_req, Payload::None);
                 service.call(new_req).await?.map_into_boxed_body()
             } else {
                 error!("Unauthorized access attempt to: {}", request_url);
-                // When unauthorized, use the http_req from new_req to build the response.
-                let (original_http_req, _) = new_req.into_parts();
-                ServiceResponse::new(original_http_req, HttpResponse::Unauthorized().finish().map_into_boxed_body())
+                ServiceResponse::new(http_req, HttpResponse::Unauthorized().finish().map_into_boxed_body())
             };
-            
+
             log::info!(
                 "{} {} -> {} (Body: '{}')",
                 request_method, request_url, &res.status(), body_str
