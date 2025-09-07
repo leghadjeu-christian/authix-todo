@@ -1,37 +1,132 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charSet="UTF-8"/>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-        <meta httpEquiv="X-UA-Compatiable" content="ie=edge"/>
-        <meta name="description" content="This is a simple to do app"/>
-        <title>To Do App</title>
-    </head>
-    <link rel="stylesheet" href="/css/base.css">
-    <link rel="stylesheet" href="/css/main.css">
-    <link rel="stylesheet" href="/css/header.css">
+<head>
+  <meta charSet="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta httpEquiv="X-UA-Compatible" content="ie=edge"/>
+  <meta name="description" content="This is a simple to-do app"/>
+  <title>To Do App</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/header.css">
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f7fa;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+
+    .mainContainer {
+      max-width: 1000px;
+      margin: 2rem auto;
+      padding: 1rem;
+    }
+
+    .todo-app-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+
+    .item-list-section {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .item-list-section h2 {
+      margin-top: 0;
+      margin-bottom: 1rem;
+      font-size: 1.25rem;
+      color: #2575fc;
+      border-bottom: 2px solid #f0f0f0;
+      padding-bottom: 0.5rem;
+    }
+
+    .item-list {
+      flex: 1;
+      min-height: 100px;
+      padding: 0.5rem;
+    }
+
+    .create-item-section {
+      margin-top: 2rem;
+      display: flex;
+      gap: 1rem;
+      background: #fff;
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .item-input {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+      transition: border 0.3s ease;
+    }
+
+    .item-input:focus {
+      outline: none;
+      border-color: #2575fc;
+      box-shadow: 0 0 0 3px rgba(37,117,252,0.15);
+    }
+
+    .create-button {
+      padding: 0.75rem 1.5rem;
+      background: #2575fc;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.2s ease;
+    }
+
+    .create-button:hover {
+      background: #1a5fd1;
+      transform: translateY(-2px);
+    }
+
+    @media (max-width: 768px) {
+      .todo-app-container {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div class="mainContainer">
-        <div id="header-placeholder"></div>
-        <div class="todo-app-container">
-            <div class="item-list-section">
-                <h2>Done Items</h2>
-                <div id="doneItems" class="item-list"></div>
-            </div>
-            <div class="item-list-section">
-                <h2>To Do Items</h2>
-                <div id="pendingItems" class="item-list"></div>
-            </div>
-            <div class="inputContainer create-item-section">
-                <input type="text" id="name" placeholder="Create a new to-do item" class="item-input">
-                <button class="actionButton create-button" id="create-button">Create</button>
-            </div>
-        </div>
+  <div class="mainContainer">
+    <div id="header-placeholder"></div>
+
+    <div class="todo-app-container">
+      <div class="item-list-section">
+        <h2>✅ Done Items</h2>
+        <div id="doneItems" class="item-list"></div>
+      </div>
+
+      <div class="item-list-section">
+        <h2>📝 To Do Items</h2>
+        <div id="pendingItems" class="item-list"></div>
+      </div>
     </div>
+
+    <div class="inputContainer create-item-section">
+      <input type="text" id="name" placeholder="Add a new task..." class="item-input">
+      <button class="actionButton create-button" id="create-button">Create</button>
+    </div>
+  </div>
+
+  <script src="/javascript/keycloak.js"></script>
+  <script>
+    {{JAVASCRIPT}}
+  </script>
 </body>
-    <script src="/javascript/keycloak.js"></script>
-    <script>
-        {{JAVASCRIPT}}
-    </script>
 </html>

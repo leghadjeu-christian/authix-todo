@@ -1,43 +1,97 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charSet="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <meta httpEquiv="X-UA-Compatible" content="ie=edge"/>
-    <meta name="description" content="This is a simple to-do app"/>
-    <title>To Do App - Login</title>
-    <style>
-        {{BASE_CSS}}
-        {{CSS}}
-        .loginButtonStyle {
-            display: inline-block;
-            background: #f7786b;
-            border: none;
-            padding: 0.5rem 2rem;
-            color: white;
-            cursor: pointer;
-            margin: 10px;
-        }
-        .loginButtonStyle:hover {
-            background: #f7686b;
-            color: black;
-        }
-    </style>
+  <meta charSet="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta httpEquiv="X-UA-Compatible" content="ie=edge" />
+  <meta name="description" content="This is a simple to-do app" />
+  <title>To Do App - Login</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+      animation: fadeIn 0.8s ease-in-out;
+    }
+
+    .card h2 {
+      margin-bottom: 1rem;
+      font-size: 1.8rem;
+      color: #333;
+    }
+
+    .card p {
+      font-size: 0.95rem;
+      color: #666;
+      margin-bottom: 1.5rem;
+    }
+
+    .button {
+      display: block;
+      width: 100%;
+      padding: 0.75rem;
+      margin: 0.5rem 0;
+      border: none;
+      border-radius: 8px;
+      background: #2575fc;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.2s ease;
+    }
+
+    .button:hover {
+      background: #1a5fd1;
+      transform: translateY(-2px);
+    }
+
+    .button.secondary {
+      background: #6a11cb;
+    }
+
+    .button.secondary:hover {
+      background: #570fa8;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
 </head>
 <body>
-    <div class="mainContainer" style="text-align:center;">
-        <h2 class="ContainerTitle">Welcome</h2>
-        <p id="loginMessage" class="FeedbackMessage"></p>
+  <div class="card">
+    <h2>Welcome</h2>
+    <p id="loginMessage" class="FeedbackMessage">Sign in or create an account to continue</p>
 
-        <button class="loginButtonStyle" id="loginButton">Login</button>
-        <button class="loginButtonStyle" id="registerButton">Register</button>
-        <button class="loginButtonStyle" id="logoutButton">Logout</button>
-    </div>
+    <button class="button" id="loginButton">Login</button>
+    <button class="button secondary" id="registerButton">Register</button>
+  </div>
 
-    <script src="/javascript/keycloak.js"></script> <!-- Ensure this path is correct -->
-    <script src="/javascript/main.js"></script>
-    <script>
-        {{JAVASCRIPT}}
-    </script>
+  <script src="/javascript/keycloak.js"></script>
+  <script src="/javascript/main.js"></script>
+  <script>
+    {{JAVASCRIPT}}
+  </script>
 </body>
 </html>
