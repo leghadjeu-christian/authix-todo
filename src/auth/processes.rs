@@ -5,12 +5,30 @@ use actix_web::HttpMessage;
 use futures_util::future::{ready, Ready};
 use log::{info, warn, error};
 use jsonwebtoken::{decode, decode_header, DecodingKey, Validation, Algorithm};
-use jsonwebtoken::jwk::JwkSet; // Correctly import JwkSet from jsonwebtoken
+use jsonwebtoken::jwk::JwkSet;
 use reqwest;
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
+use serde_json::Value;
+
+// Custom deserialization for the 'aud' field, which can be a string or an array of strings.
+fn deserialize_aud<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let v = Value::deserialize(deserializer)?;
+    if v.is_string() {
+        Ok(v.as_str().unwrap().to_string())
+    } else if v.is_array() {
+        let aud_array: Vec<String> = serde_json::from_value(v).map_err(serde::de::Error::custom)?;
+        Ok(aud_array.join(",")) // Join multiple audiences with a comma
+    } else {
+        Err(serde::de::Error::custom("invalid type for aud field"))
+    }
+}
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Claims {
+    #[serde(deserialize_with = "deserialize_aud")]
     pub aud: String,
     pub exp: usize,
     pub iat: usize,

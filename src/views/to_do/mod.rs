@@ -1,11 +1,13 @@
 use actix_web::{web};
 use actix_web_middleware_keycloak_auth::{KeycloakAuth, AlwaysReturnPolicy};
+use log::info; // Add this import
 
 mod utils;
 mod create;
 mod get;
 mod edit;
 mod delete;
+mod test_edit; // New module
 use super::path::Path;
 
 /// This function adds the to-do item views to the web server.
@@ -14,6 +16,7 @@ use super::path::Path;
 /// * app: &mut web::ServiceConfig - the app service config
 /// * keycloak_auth: KeycloakAuth - middleware for protecting these routes
 pub fn item_factory(app: &mut web::ServiceConfig, _keycloak_auth: KeycloakAuth<AlwaysReturnPolicy>) {
+    info!("Setting up to-do item routes."); // Add this log
     // define the path struct
     let base_path: Path = Path { prefix: String::from("/item"), backend: true };
 
@@ -25,5 +28,6 @@ pub fn item_factory(app: &mut web::ServiceConfig, _keycloak_auth: KeycloakAuth<A
             .route(&base_path.define(String::from("/get")), web::get().to(get::get))
             .route(&base_path.define(String::from("/edit")), web::put().to(edit::edit))
             .route(&base_path.define(String::from("/delete")), web::post().to(delete::delete))
+            .route(&base_path.define(String::from("/test_edit")), web::put().to(test_edit::test_edit_json)) // New test route
     );
 }

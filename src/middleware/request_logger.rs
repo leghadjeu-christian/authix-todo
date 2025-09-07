@@ -84,9 +84,6 @@ where
                 request_method, request_url, header_info, body_str
             );
 
-            // Store the body in http_req's extensions
-            http_req.extensions_mut().insert(body.clone());
-
             let passed: bool;
             if request_url.contains("/api/v1/item/") {
                 info!("API item path detected: {}", request_url);
@@ -107,6 +104,8 @@ where
                 match auth::process_token(&http_req, jwks_uri_data).await {
                     Ok(claims) => {
                         info!("Token processed successfully for: {}. User ID: {}", request_url, claims.sub);
+                        // Store Claims in request extensions
+                        http_req.extensions_mut().insert(claims);
                         passed = true;
                     },
                     Err(message) => {
@@ -119,13 +118,9 @@ where
             }
 
             let res = if passed {
-                // Reconstruct the ServiceRequest with the modified http_req and the original payload (now empty)
-                if http_req.extensions().get::<crate::auth::processes::Claims>().is_some() {
-                    info!("Claims found in request extensions before calling next service for URI: {}", request_url);
-                } else {
-                    warn!("Claims NOT found in request extensions before calling next service for URI: {}", request_url);
-                }
-                let new_req = ServiceRequest::from_parts(http_req, Payload::None);
+                // Reconstruct the payload from the consumed body bytes
+                let new_payload = Payload::from(actix_web::web::Bytes::from(body.clone()));
+                let new_req = ServiceRequest::from_parts(http_req, new_payload);
                 service.call(new_req).await?.map_into_boxed_body()
             } else {
                 error!("Unauthorized access attempt to: {}", request_url);
