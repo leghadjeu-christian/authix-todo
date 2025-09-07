@@ -9,11 +9,14 @@ RUN apt-get update && apt-get install -y openssl libssl-dev pkg-config && rm -rf
 # Copy manifests first to leverage Docker layer caching
 COPY Cargo.toml Cargo.lock ./
 
-# Warm up dependencies with dummy main.rs
+# Warm up dependencies with a dummy main.rs
 RUN mkdir src \
     && echo "fn main() { println!(\"hello placeholder\"); }" > src/main.rs \
     && cargo build --release \
     && rm -rf src
+
+# Install diesel_cli into /usr/local/bin (instead of cargo home)
+RUN cargo install diesel_cli --no-default-features --features postgres --root /usr/local
 
 # Copy real source code and migrations
 COPY src ./src
@@ -22,24 +25,21 @@ COPY css ./css
 COPY templates ./templates
 COPY migrations ./migrations
 
-# Clean old placeholder build and rebuild actual binary
-RUN cargo clean && cargo build --release
-
-# Install diesel_cli into /usr/local/bin
-RUN cargo install diesel_cli --no-default-features --features postgres --root /usr/local
+# Build the actual application
+RUN cargo build --release
 
 # Stage 2: Runtime
 FROM debian:bookworm-slim
 
 WORKDIR /app
 
-# Install runtime deps
+# Install only required runtime dependencies
 RUN apt-get update && apt-get install -y ca-certificates libssl-dev libpq-dev && rm -rf /var/lib/apt/lists/*
 
-# Copy Actix app binary
+# Copy the compiled Actix app binary
 COPY --from=builder /app/target/release/web_application ./web_application
 
-# Copy diesel_cli for migrations
+# Copy diesel_cli into runtime (for migrations in initContainer)
 COPY --from=builder /usr/local/bin/diesel /usr/local/bin/diesel
 
 # Copy static assets and migrations
@@ -48,6 +48,8 @@ COPY --from=builder /app/css ./css
 COPY --from=builder /app/templates ./templates
 COPY --from=builder /app/migrations ./migrations
 
+# Expose app port
 EXPOSE 8000
 
+# Run Actix app
 CMD ["./web_application"]
