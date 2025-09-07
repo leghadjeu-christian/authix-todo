@@ -1,5 +1,4 @@
 use actix_web::{web};
-use actix_web_middleware_keycloak_auth::{KeycloakAuth, AlwaysReturnPolicy};
 use log::info; // Add this import
 
 mod utils;
@@ -15,7 +14,7 @@ use super::path::Path;
 /// # Arguments
 /// * app: &mut web::ServiceConfig - the app service config
 /// * keycloak_auth: KeycloakAuth - middleware for protecting these routes
-pub fn item_factory(app: &mut web::ServiceConfig, _keycloak_auth: KeycloakAuth<AlwaysReturnPolicy>) {
+pub fn item_factory(app: &mut web::ServiceConfig) {
     info!("Setting up to-do item routes."); // Add this log
     // define the path struct
     let base_path: Path = Path { prefix: String::from("/item"), backend: true };

@@ -5,11 +5,9 @@ mod path;
 mod to_do;
 pub mod users;
 
-use actix_web_middleware_keycloak_auth::{KeycloakAuth, AlwaysReturnPolicy};
-
-pub fn views_factory(app: &mut web::ServiceConfig, keycloak_auth: KeycloakAuth<AlwaysReturnPolicy>) {
+pub fn views_factory(app: &mut web::ServiceConfig) {
     auth::auth_factory(app);
-    to_do::item_factory(app, keycloak_auth);
+    to_do::item_factory(app);
     app::app_factory(app);
     users::user_factory(app);
 }
