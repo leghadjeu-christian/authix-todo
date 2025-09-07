@@ -7,31 +7,88 @@
     <meta name="description" content="This is a simple to-do app"/>
     <title>To Do App - Login</title>
     <style>
-        {{BASE_CSS}}
-        {{CSS}}
+        /* {{BASE_CSS}} */
+        /* {{CSS}} */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f4f7f6; /* Light background for a modern feel */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+            line-height: 1.6;
+        }
+        .mainContainer {
+            background: #ffffff;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 450px; /* Slightly wider for better content display */
+            width: 90%;
+            box-sizing: border-box;
+            margin: auto; /* Ensures perfect centering within the flex container */
+        }
+        .ContainerTitle {
+            color: #2c3e50;
+            margin-bottom: 15px; /* Reduced margin */
+            font-size: 2.5em; /* Slightly larger title */
+            font-weight: 700; /* Bolder */
+            letter-spacing: -0.5px;
+        }
+        .welcome-message {
+            color: #555;
+            margin-bottom: 30px; /* More space below welcome message */
+            font-size: 1.1em;
+        }
+        .FeedbackMessage {
+            color: #e74c3c;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+        }
         .loginButtonStyle {
             display: inline-block;
-            background: #f7786b;
+            background: #27ae60; /* A fresh green for primary actions */
             border: none;
-            padding: 0.5rem 2rem;
+            padding: 14px 30px; /* Slightly larger buttons */
             color: white;
             cursor: pointer;
-            margin: 10px;
+            margin: 8px; /* Slightly reduced margin between buttons */
+            border-radius: 8px;
+            font-size: 1.2em; /* Larger font for buttons */
+            font-weight: 600;
+            transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
         .loginButtonStyle:hover {
-            background: #f7686b;
-            color: black;
+            background: #229954; /* Darker green on hover */
+            transform: translateY(-3px); /* More pronounced lift effect */
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+            color: white;
+        }
+        .loginButtonStyle:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        .button-group {
+            margin-top: 40px; /* More space above buttons */
+            display: flex;
+            justify-content: center;
+            gap: 20px; /* Space between buttons */
         }
     </style>
 </head>
 <body>
-    <div class="mainContainer" style="text-align:center;">
-        <h2 class="ContainerTitle">Welcome</h2>
+    <div class="mainContainer">
+        <h1 class="ContainerTitle">Welcome to Your To-Do List!</h1>
+        <p class="welcome-message">Register to get started, or log in if you already have an account.</p>
         <p id="loginMessage" class="FeedbackMessage"></p>
-
-        <button class="loginButtonStyle" id="loginButton">Login</button>
-        <button class="loginButtonStyle" id="registerButton">Register</button>
-        <button class="loginButtonStyle" id="logoutButton">Logout</button>
+        <div class="button-group">
+            <button class="loginButtonStyle" id="registerButton">Register</button>
+            <button class="loginButtonStyle" id="loginButton">Login</button>
+        </div>
     </div>
 
     <script src="/javascript/keycloak.js"></script> <!-- Ensure this path is correct -->
