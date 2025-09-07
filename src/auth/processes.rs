@@ -1,4 +1,8 @@
-use actix_web::HttpRequest;
+use actix_web::{FromRequest, HttpRequest, HttpResponse, Responder, web, Error};
+use actix_web::dev::Payload;
+use actix_web::error::ErrorUnauthorized;
+use actix_web::HttpMessage;
+use futures_util::future::{ready, Ready};
 use log::{info, warn, error};
 use jsonwebtoken::{decode, decode_header, DecodingKey, Validation, Algorithm};
 use jsonwebtoken::jwk::JwkSet; // Correctly import JwkSet from jsonwebtoken
@@ -18,6 +22,22 @@ pub struct Claims {
     pub given_name: String,
     pub family_name: String,
     pub email: String,
+}
+
+impl FromRequest for Claims {
+    type Error = Error;
+    type Future = Ready<Result<Self, Self::Error>>;
+
+    fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
+        let claims = req.extensions().get::<Claims>().cloned();
+        ready(match claims {
+            Some(c) => Ok(c),
+            None => {
+                warn!("Claims not found in request extensions during FromRequest extraction. Returning 401 Unauthorized.");
+                Err(ErrorUnauthorized("Unauthorized: Missing user claims"))
+            }
+        })
+    }
 }
 
 /// Checks to see if the token matches and is valid using dynamic JWKS.

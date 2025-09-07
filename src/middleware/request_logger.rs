@@ -62,7 +62,7 @@ where
         let service = self.service.clone();
 
         Box::pin(async move {
-            let (mut http_req, mut payload) = req.into_parts();
+            let (mut http_req, mut payload) = req.into_parts(); // Ensure payload is mutable
 
             let request_url = http_req.uri().path().to_string();
             let request_method = http_req.method().to_string();
@@ -120,6 +120,11 @@ where
 
             let res = if passed {
                 // Reconstruct the ServiceRequest with the modified http_req and the original payload (now empty)
+                if http_req.extensions().get::<crate::auth::processes::Claims>().is_some() {
+                    info!("Claims found in request extensions before calling next service for URI: {}", request_url);
+                } else {
+                    warn!("Claims NOT found in request extensions before calling next service for URI: {}", request_url);
+                }
                 let new_req = ServiceRequest::from_parts(http_req, Payload::None);
                 service.call(new_req).await?.map_into_boxed_body()
             } else {

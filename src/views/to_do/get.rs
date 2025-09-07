@@ -13,21 +13,7 @@ use crate::auth::processes::Claims;
 /// # Returns
 /// * (web::Json): all of the stored to do items for the authenticated user
 /// * (HttpResponse::Unauthorized): if the user is not authenticated
-pub async fn get(req: HttpRequest) -> impl Responder {
-    info!("Attempting to retrieve to-do items for an authenticated user.");
-
-    let claims = req.extensions().get::<Claims>().cloned();
-
-    let user_id = match claims {
-        Some(c) => {
-            info!("Claims found in request extensions. User ID: {}", c.sub);
-            c.sub
-        },
-        None => {
-            warn!("Claims not found in request extensions. Unauthorized access attempt.");
-            return HttpResponse::Unauthorized().body("Unauthorized: Missing user claims");
-        }
-    };
-
-    HttpResponse::Ok().json(return_state(&user_id))
+pub async fn get(claims: Claims) -> HttpResponse {
+    info!("Attempting to retrieve to-do items for authenticated user: {}", claims.sub);
+    HttpResponse::Ok().json(return_state(&claims.sub))
 }

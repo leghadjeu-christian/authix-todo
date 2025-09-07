@@ -1,47 +1,45 @@
-use crate::database::establish_connection;
-use crate::diesel;
-use crate::models::item::item::Item;
-use crate::models::item::new_item::NewItem;
-use actix_web::{HttpRequest, HttpResponse, Responder};
-use actix_web::HttpMessage; // Import HttpMessage for extensions()
+use actix_web::{web, HttpResponse};
+use log::info;
+
 use diesel::prelude::*;
-use log::{warn, info}; // Import log for warnings and info
+use diesel::{RunQueryDsl, Insertable};
+
+use crate::database::establish_connection;
+use crate::models::item::new_item::NewItem;
+use crate::schema::to_do;
 
 use super::utils::return_state;
-use crate::schema::to_do;
-use crate::auth::processes::Claims; // Import Claims struct
+use crate::auth::processes::Claims;
+use crate::models::item::item::Item; // Import Item to use in filter
 
-pub async fn create(req: HttpRequest) -> impl Responder {
-    info!("Attempting to create a new to-do item for an authenticated user.");
+/// This view creates a new to do item in the database.
+///
+/// # Arguments
+/// * claims (Claims): Authenticated user claims extracted from the request.
+/// * path_title (web::Path<String>): The title of the to-do item from the path.
+///
+/// # Returns
+/// * (HttpResponse): A JSON response containing all of the stored to do items for the authenticated user, or an error.
+pub async fn create(claims: Claims, path_title: web::Path<String>) -> HttpResponse {
+    info!("Attempting to create a new to-do item for authenticated user: {}", claims.sub);
 
-    let claims = req.extensions().get::<Claims>().cloned();
-
-    let user_id = match claims {
-        Some(c) => {
-            info!("Claims found in request extensions. User ID: {}", c.sub);
-            c.sub
-        },
-        None => {
-            warn!("Claims not found in request extensions. Unauthorized access attempt.");
-            return HttpResponse::Unauthorized().body("Unauthorized: Missing user claims");
-        }
-    };
-
-    let title: String = req.match_info().get("title").unwrap().to_string();
-    let title_ref: String = title.clone();
+    let title = path_title.into_inner();
     let mut connection = establish_connection();
+
     let items = to_do::table
-        .filter(to_do::columns::title.eq(title_ref.as_str()))
-        .filter(to_do::columns::user_id.eq(&user_id))
+        .filter(to_do::columns::title.eq(&title))
+        .filter(to_do::columns::user_id.eq(&claims.sub))
         .order(to_do::columns::id.asc())
         .load::<Item>(&mut connection)
         .unwrap();
-    
-    if items.len() == 0 {
-        let new_post = NewItem::new(title, user_id.clone()); // Pass user_id as String
-        let _ = diesel::insert_into(to_do::table)
+
+    if items.is_empty() {
+        let new_post = NewItem::new(title, claims.sub.clone());
+        diesel::insert_into(to_do::table)
             .values(&new_post)
-            .execute(&mut connection);
+            .execute(&mut connection)
+            .expect("Error saving new post");
     }
-    HttpResponse::Ok().json(return_state(&user_id))
+
+    HttpResponse::Ok().json(return_state(&claims.sub))
 }

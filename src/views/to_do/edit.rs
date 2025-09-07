@@ -1,50 +1,36 @@
-use crate::diesel;
+use actix_web::{web, HttpResponse};
+use log::info;
+
 use diesel::prelude::*;
-use actix_web::{web, HttpResponse, HttpRequest};
-use actix_web::HttpMessage; // Import HttpMessage for extensions()
-use log::{warn, info}; // Import log for warnings and info
+use diesel::RunQueryDsl;
 
 use super::utils::return_state;
 use crate::database::establish_connection;
 use crate::json_serialization::to_do_item::ToDoItem;
 use crate::schema::to_do;
-use crate::auth::processes::Claims; // Import Claims struct
+use crate::auth::processes::Claims;
 
-
-/// This function edits a to do item's status for the authenticated user.
+/// This function edits a to-do item's status for the authenticated user.
 ///
 /// # Arguments
-/// * to_do_item (web::Json<ToDoItem>): This serializes the JSON body via the ToDoItem struct
-/// * req (HttpRequest): The incoming HTTP request, containing user claims in its extensions.
+/// * claims (Claims): Authenticated user claims extracted from the request.
+/// * to_do_item (web::Json<ToDoItem>): This serializes the JSON body via the ToDoItem struct.
 ///
 /// # Returns
-/// * (HttpResponse): response body to be passed to the viewer.
-pub async fn edit(to_do_item: web::Json<ToDoItem>, req: HttpRequest) -> HttpResponse {
-    info!("Attempting to edit a to-do item for an authenticated user.");
+/// * (HttpResponse): Response body to be passed to the viewer.
+pub async fn edit(claims: Claims, to_do_item: web::Json<ToDoItem>) -> HttpResponse {
+    info!("Attempting to edit a to-do item for authenticated user: {}", claims.sub);
 
-    let claims = req.extensions().get::<Claims>().cloned();
-
-    let user_id = match claims {
-        Some(c) => {
-            info!("Claims found in request extensions. User ID: {}", c.sub);
-            c.sub
-        },
-        None => {
-            warn!("Claims not found in request extensions. Unauthorized access attempt.");
-            return HttpResponse::Unauthorized().body("Unauthorized: Missing user claims");
-        }
-    };
-    
     let title_ref: String = to_do_item.title.clone();
-    
     let mut connection = establish_connection();
-    let results = to_do::table.filter(to_do::columns::title
-        .eq(title_ref))
-        .filter(to_do::columns::user_id.eq(&user_id)); // Pass &user_id as &str
-        
+
+    let results = to_do::table
+        .filter(to_do::columns::title.eq(title_ref))
+        .filter(to_do::columns::user_id.eq(&claims.sub));
+
     let _ = diesel::update(results)
         .set(to_do::columns::status.eq("done"))
         .execute(&mut connection);
-        
-    HttpResponse::Ok().json(return_state(&user_id))
+
+    HttpResponse::Ok().json(return_state(&claims.sub))
 }
