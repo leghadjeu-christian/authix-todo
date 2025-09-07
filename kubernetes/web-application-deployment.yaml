@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-application
+  labels:
+    app: web-application
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-application
+  template:
+    metadata:
+      labels:
+        app: web-application
+    spec:
+      initContainers:
+      - name: migrate-db
+        image: your-docker-registry/web_application:latest # REPLACE with your actual image path
+        command: ["/bin/sh", "-c", "sleep 10 && /app/diesel migration run"] # Add sleep to give DB time to fully initialize
+        env:
+        - name: DATABASE_URL
+          value: "postgres://username:password@to-do-postgres-rw:5432/to_do" # CNPG provides this service endpoint
+      containers:
+      - name: web-application
+        image: your-docker-registry/web_application:latest # REPLACE with your actual image path
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DATABASE_URL
+          value: "postgres://username:password@to-do-postgres-rw:5432/to_do" # CNPG provides this service endpoint
+        - name: RUST_LOG
+          value: "info"
+        - name: KEYCLOAK_BASE_URL
+          value: "http://your-keycloak-server:8080/realms/myrealm" # REPLACE with your Keycloak URL
+        # Ensure 'keycloak_pub.pem' is available if you're still using file-based public key for some reason,
+        # otherwise Keycloak config fetching should handle it.

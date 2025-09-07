@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   postgres:
     container_name: 'to-do-postgres'
@@ -12,5 +14,39 @@ services:
       - 'PGDATA=/var/lib/postgresql/data/pgdata'
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U username -d to_do"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrations:
+    container_name: 'web-application-migrations'
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgres://username:password@postgres:5432/to_do
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: /app/diesel migration run
+
+  web_application:
+    container_name: 'web-application'
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '8000:8000'
+    environment:
+      - DATABASE_URL=postgres://username:password@postgres:5432/to_do
+      - RUST_LOG=info
+      # Add your Keycloak configuration here if needed, e.g.:
+      # - KEYCLOAK_BASE_URL=http://your-keycloak-server:8080/realms/myrealm
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+
 volumes:
   pgdata:

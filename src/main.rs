@@ -27,8 +27,9 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
     info!("Starting Actix Web application...");
 
-    const KEYCLOAK_BASE_URL: &str = "http://localhost:8080/realms/myrealm";
-    let jwks_uri: String = match fetch_keycloak_openid_config(KEYCLOAK_BASE_URL).await {
+    let keycloak_base_url = std::env::var("KEYCLOAK_BASE_URL")
+        .expect("KEYCLOAK_BASE_URL must be set in environment variables");
+    let jwks_uri: String = match fetch_keycloak_openid_config(&keycloak_base_url).await {
         Ok(uri) => uri,
         Err(e) => {
             error!("Failed to fetch JWKS URI from Keycloak: {}", e);

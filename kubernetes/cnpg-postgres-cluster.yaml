@@ -1,0 +1,21 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: to-do-postgres
+spec:
+  instances: 1
+  storage:
+    size: 1Gi
+  bootstrap:
+    initdb:
+      database: to_do
+      owner: username
+      secret:
+        name: to-do-postgres-app
+  postgresql:
+    parameters:
+      max_connections: "100"
+      shared_buffers: "256MB"
+  # Optional: Define monitoring for Prometheus
+  monitoring:
+    enablePodMonitor: true
