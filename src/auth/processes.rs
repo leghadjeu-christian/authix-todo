@@ -1,3 +1,5 @@
+use std::env;
+
 use actix_web::{FromRequest, HttpRequest, HttpResponse, Responder, web, Error};
 use actix_web::dev::Payload;
 use actix_web::error::ErrorUnauthorized;
@@ -13,7 +15,7 @@ use serde_json::Value;
 // Custom deserialization for the 'aud' field, which can be a string or an array of strings.
 fn deserialize_aud<'de, D>(deserializer: D) -> Result<String, D::Error>
 where
-    D: Deserializer<'de>,
+D: Deserializer<'de>,
 {
     let v = Value::deserialize(deserializer)?;
     if v.is_string() {
@@ -45,7 +47,7 @@ pub struct Claims {
 impl FromRequest for Claims {
     type Error = Error;
     type Future = Ready<Result<Self, Self::Error>>;
-
+    
     fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
         let claims = req.extensions().get::<Claims>().cloned();
         ready(match claims {
@@ -68,7 +70,7 @@ impl FromRequest for Claims {
 /// * (Result<Claims, String>): Claims if the token is valid, an error message if not.
 pub async fn check_password(token_string: String, jwks_uri: &str) -> Result<Claims, String> {
     info!("Attempting to check password/validate token using JWKS from: {}", jwks_uri);
-
+    
     // 1. Decode the header to get the `kid` (Key ID)
     let header = match decode_header(&token_string) {
         Ok(h) => h,
@@ -77,7 +79,7 @@ pub async fn check_password(token_string: String, jwks_uri: &str) -> Result<Clai
             return Err(format!("Invalid JWT header: {}", e));
         }
     };
-
+    
     let kid = match header.kid {
         Some(k) => k,
         None => {
@@ -86,7 +88,7 @@ pub async fn check_password(token_string: String, jwks_uri: &str) -> Result<Clai
         }
     };
     info!("Extracted 'kid' from JWT header: {}", kid);
-
+    
     // 2. Fetch the JWKS
     let jwks_response = match reqwest::get(jwks_uri).await {
         Ok(response) => response,
@@ -95,7 +97,7 @@ pub async fn check_password(token_string: String, jwks_uri: &str) -> Result<Clai
             return Err(format!("Failed to fetch JWKS: {}", e));
         }
     };
-
+    
     let jwks_json: JwkSet = match jwks_response.json().await {
         Ok(json) => json,
         Err(e) => {
@@ -104,7 +106,7 @@ pub async fn check_password(token_string: String, jwks_uri: &str) -> Result<Clai
         }
     };
     info!("Successfully fetched and parsed JWKS.");
-
+    
     // 3. Find the correct JWK using the `kid`
     let jwk = match jwks_json.keys.iter().find(|key| key.common.key_id.as_ref() == Some(&kid)) {
         Some(key) => key,
@@ -114,7 +116,7 @@ pub async fn check_password(token_string: String, jwks_uri: &str) -> Result<Clai
         }
     };
     info!("Found matching JWK for kid: {}", kid);
-
+    
     // 4. Create a DecodingKey from the JWK
     let decoding_key = match DecodingKey::from_jwk(jwk) {
         Ok(key) => key,
@@ -124,16 +126,18 @@ pub async fn check_password(token_string: String, jwks_uri: &str) -> Result<Clai
         }
     };
     info!("Successfully created DecodingKey from JWK.");
-
+    
     // 5. Validate the token
     let mut validation = Validation::new(Algorithm::RS256); // Keycloak typically uses RS256
     // You might need to set `validation.validate_aud = false;` or specify expected audiences if `aud` claim is not a single string or if there are multiple valid audiences.
     // validation.set_issuer(&["http://localhost:8080/realms/myrealm"]); // Optional: Validate issuer
-
+    
     validation.required_spec_claims.retain(|claim| claim != "exp"); // Remove "exp" from required claims if not needed
     validation.validate_aud = false; // Temporarily disable audience validation for debugging
-    validation.set_issuer(&["http://localhost:8080/realms/myrealm"]); // Optional: Validate issuer
-
+    let issuer = env::var("OIDC_ISSUER")
+    .unwrap_or_else(|_| "http://localhost:8080/realms/myrealm".to_string());
+    
+    validation.set_issuer(&[&issuer]);
     match decode::<Claims>(&token_string, &decoding_key, &validation) {
         Ok(token_data) => {
             info!("Token validation successful. Claims: {:?}", token_data.claims);

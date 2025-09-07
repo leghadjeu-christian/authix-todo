@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y openssl libssl-dev pkg-config && rm -rf
 # Copy manifests first to leverage Docker layer caching
 COPY Cargo.toml Cargo.lock ./
 
-# Warm up dependencies with a dummy main.rs
+# Warm up dependencies with a dummy main.rs (to cache deps)
 RUN mkdir src \
     && echo "fn main() { println!(\"hello placeholder\"); }" > src/main.rs \
     && cargo build --release \
@@ -25,8 +25,8 @@ COPY css ./css
 COPY templates ./templates
 COPY migrations ./migrations
 
-# Build the actual application
-RUN cargo build --release
+# Force rebuild the actual application (remove placeholder build artifacts)
+RUN cargo clean && cargo build --release --bin web_application
 
 # Stage 2: Runtime
 FROM debian:bookworm-slim
