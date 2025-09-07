@@ -1,5 +1,5 @@
 use actix_web::{web, HttpResponse};
-use log::info;
+use log::{info, error};
 
 use diesel::prelude::*;
 use diesel::{RunQueryDsl, Insertable};
@@ -7,6 +7,7 @@ use diesel::{RunQueryDsl, Insertable};
 use crate::database::establish_connection;
 use crate::models::item::new_item::NewItem;
 use crate::schema::to_do;
+use crate::models::user::user_utils; // Import user_utils
 
 use super::utils::return_state;
 use crate::auth::processes::Claims;
@@ -22,6 +23,19 @@ use crate::models::item::item::Item; // Import Item to use in filter
 /// * (HttpResponse): A JSON response containing all of the stored to do items for the authenticated user, or an error.
 pub async fn create(claims: Claims, path_title: web::Path<String>) -> HttpResponse {
     info!("Attempting to create a new to-do item for authenticated user: {}", claims.sub);
+
+    // Ensure the user exists in our local database
+    let user = match user_utils::find_or_create_user(
+        &claims.sub,
+        &claims.email,
+        &claims.preferred_username,
+    ) {
+        Ok(u) => u,
+        Err(e) => {
+            error!("Failed to find or create user for claims.sub {}: {}", claims.sub, e);
+            return HttpResponse::InternalServerError().body(format!("Failed to prepare user: {}", e));
+        }
+    };
 
     let title = path_title.into_inner();
     let mut connection = establish_connection();

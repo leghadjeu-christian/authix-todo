@@ -24,12 +24,6 @@ impl Path {
     /// app.route(&path.define(String::from("tail/path")), web::get().to(login::login))
     /// ```
     pub fn define(&self, following_path: String) -> String {
-        match self.backend {
-            true => {
-                let path: String = self.prefix.to_owned() + &following_path;
-                String::from("/api/v1") + &path
-            },
-            false => self.prefix.to_owned() + &following_path
-        }
+        self.prefix.to_owned() + &following_path
     }
 }
