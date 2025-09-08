@@ -6,11 +6,10 @@ use diesel::{Identifiable, Queryable};
 #[derive(Queryable, Clone, Identifiable)]
 #[table_name = "users"]
 pub struct User {
-    pub id: i32,
+    pub id: String,
     pub username: String,
     pub email: String,
     pub password: String,
-    pub unique_id: String,
 }
 
 impl User {

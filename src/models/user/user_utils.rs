@@ -10,7 +10,7 @@ pub fn find_or_create_user(user_id: &str, email: &str, username: &str) -> Result
 
     // Try to find the user by unique_id (which is claims.sub)
     let user_result = users::table
-        .filter(users::columns::unique_id.eq(user_id))
+        .filter(users::columns::id.eq(user_id))
         .first::<User>(&mut connection);
 
     match user_result {
@@ -30,7 +30,7 @@ pub fn find_or_create_user(user_id: &str, email: &str, username: &str) -> Result
 
             // Override the generated UUID with the Keycloak user_id (claims.sub)
             let new_user_with_keycloak_id = NewUser {
-                unique_id: user_id.to_string(),
+                id: user_id.to_string(),
                 ..new_user
             };
 

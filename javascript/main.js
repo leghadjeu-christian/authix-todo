@@ -1,5 +1,5 @@
 window.keycloak = new Keycloak({
-    url: 'http://localhost:8080/',
+    url: 'http://192.168.56.10:31194/',
     realm: 'myrealm',
     clientId: 'myclient'
 });
