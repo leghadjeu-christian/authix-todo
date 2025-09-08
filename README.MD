@@ -2,9 +2,10 @@
 
 To clone this repository, use the following command:
 ```bash
-git clone https://github.com/leghadjeu-christian/authix-todo.git
-cd authix-todo
+git clone https://github.com/leghadjeu-christian/web_application.git
+cd web_application
 ```
+
 
 This project is a web application built with Rust, utilizing the Diesel ORM for database interactions, Keycloak for authentication, and PostgreSQL as the database.
 
