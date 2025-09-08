@@ -1,1 +1,7 @@
 /target
+.env
+state.json
+keycloak_auth_report.md
+.DS_Store
+Thumbs.db
+.vscode/

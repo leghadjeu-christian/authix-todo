@@ -5,6 +5,13 @@ pub mod processes; // Make processes module public
 pub mod keycloak_config;
 use crate::auth::processes::Claims;
 
+#[derive(Clone, Debug)]
+pub struct KeycloakClientConfig {
+    pub auth_server_url: String,
+    pub realm: String,
+    pub client_id: String,
+}
+
 pub async fn process_token(request: &HttpRequest, jwks_uri: web::Data<String>) -> Result<Claims, String> {
     info!("Attempting to process token in auth::mod.rs");
     let jwks_uri_str: &str = &jwks_uri;

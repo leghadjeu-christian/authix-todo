@@ -1,7 +1,7 @@
 window.keycloak = new Keycloak({
-    url: 'http://192.168.56.10:31194/',
-    realm: 'myrealm',
-    clientId: 'myclient'
+    url: window.KEYCLOAK_FRONTEND_URL,
+    realm: window.KEYCLOAK_FRONTEND_REALM,
+    clientId: window.KEYCLOAK_FRONTEND_CLIENT_ID
 });
 
 window.addEventListener("DOMContentLoaded", () => {
