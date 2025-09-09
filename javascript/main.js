@@ -39,22 +39,28 @@ window.addEventListener("DOMContentLoaded", () => {
                 console.error("Failed to initialize app features due to header loading error:", error);
                 // Optionally, display a user-friendly message or redirect to an error page
             });
-        } else if (window.location.pathname === '/login/') {
-            console.log("Keycloak not authenticated on login page. Initializing login features.");
-            initializeLoginFeatures(); // Initialize login buttons if not authenticated on login page
+        } else { // User is not authenticated
+            console.log("Keycloak not authenticated.");
+            // If not authenticated and not on the login page, redirect to login
+            if (window.location.pathname !== '/login/') {
+                console.log("Redirecting unauthenticated user to /login/");
+                window.location.href = '/login/';
+                return; // Stop further execution
+            } else {
+                initializeLoginFeatures(); // Still initialize login features if on login page but not authenticated
+            }
         }
-
     }).catch((error) => {
         console.error("Failed to initialize Keycloak:", error);
-        // If Keycloak initialization fails, and we are not on the login page, attempt logout/redirect.
-        if (window.location.pathname !== '/login/') {
-            doLogout();
-        } else {
-            // If on the login page and init fails, ensure login buttons are still functional
+        // If Keycloak initialization fails (e.g., Keycloak server unavailable), ensure login buttons are still functional
+        if (window.location.pathname === '/login/') {
             initializeLoginFeatures();
+        } else {
+            // For other pages, if Keycloak init fails, consider a full logout or error state
+            doLogout();
         }
     });
-});
+}); // Closing bracket for DOMContentLoaded event listener. Removed redundant '});'
 
 // New function to initialize login page specific features
 function initializeLoginFeatures() {
