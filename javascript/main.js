@@ -39,15 +39,51 @@ window.addEventListener("DOMContentLoaded", () => {
                 console.error("Failed to initialize app features due to header loading error:", error);
                 // Optionally, display a user-friendly message or redirect to an error page
             });
-            }
+        } else if (window.location.pathname === '/login/') {
+            console.log("Keycloak not authenticated on login page. Initializing login features.");
+            initializeLoginFeatures(); // Initialize login buttons if not authenticated on login page
+        }
 
     }).catch((error) => {
         console.error("Failed to initialize Keycloak:", error);
+        // If Keycloak initialization fails, and we are not on the login page, attempt logout/redirect.
         if (window.location.pathname !== '/login/') {
-            doLogout(); // Fallback or error page, only if not on login page
+            doLogout();
+        } else {
+            // If on the login page and init fails, ensure login buttons are still functional
+            initializeLoginFeatures();
         }
     });
 });
+
+// New function to initialize login page specific features
+function initializeLoginFeatures() {
+    const loginButton = document.getElementById("loginButton");
+    if (loginButton) {
+        loginButton.addEventListener("click", () => {
+            if (window.keycloak) {
+                window.keycloak.login();
+            } else {
+                console.error("Keycloak instance not found for login button.");
+            }
+        });
+    } else {
+        console.warn("Login button not found.");
+    }
+
+    const registerButton = document.getElementById("registerButton");
+    if (registerButton) {
+        registerButton.addEventListener("click", () => {
+            if (window.keycloak) {
+                window.keycloak.register();
+            } else {
+                console.error("Keycloak instance not found for register button.");
+            }
+        });
+    } else {
+        console.warn("Register button not found.");
+    }
+}
 
 function doLogout() {
     console.log("Logging out...");
