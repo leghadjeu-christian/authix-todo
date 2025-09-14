@@ -17,6 +17,14 @@ window.addEventListener("DOMContentLoaded", () => {
             // Keep for existing backend compatibility for now, though backend should ideally validate the header token
             localStorage.setItem("user-token", keycloak.token);
 
+            // Display username
+            if (keycloak.tokenParsed && keycloak.tokenParsed.preferred_username) {
+                const usernameDisplay = document.getElementById('username-display');
+                if (usernameDisplay) {
+                    usernameDisplay.innerHTML = `Welcome, ${keycloak.tokenParsed.preferred_username}!`;
+                }
+            }
+
             // Refresh token regularly
             setInterval(() => {
                 keycloak.updateToken(70).then(refreshed => {

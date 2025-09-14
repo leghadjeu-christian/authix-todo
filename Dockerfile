@@ -1,10 +1,13 @@
 # Stage 1: Builder
-FROM rust:latest AS builder
-
+FROM rust:1.82.0-slim-bullseye AS builder
 WORKDIR /app
 
-# Install dependencies
-RUN apt-get update && apt-get install -y openssl libssl-dev pkg-config && rm -rf /var/lib/apt/lists/*
+# Install system dependencies for Diesel
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy manifests first to leverage Docker layer caching
 COPY Cargo.toml Cargo.lock ./
@@ -15,8 +18,8 @@ RUN mkdir src \
     && cargo build --release \
     && rm -rf src
 
-# Install diesel_cli into /usr/local/bin (instead of cargo home)
-RUN cargo install diesel_cli --no-default-features --features postgres --root /usr/local
+# Install diesel_cli (same glibc as runtime)
+RUN cargo install diesel_cli --version 2.2.12 --no-default-features --features postgres --root /usr/local
 
 # Copy real source code and migrations
 COPY src ./src
@@ -24,17 +27,20 @@ COPY javascript ./javascript
 COPY css ./css
 COPY templates ./templates
 COPY migrations ./migrations
+COPY diesel.toml ./diesel.toml
 
-# Force rebuild the actual application (remove placeholder build artifacts)
+# Build the real application
 RUN cargo clean && cargo build --release --bin web_application
 
 # Stage 2: Runtime
-FROM debian:bookworm-slim
-
+FROM debian:bullseye-slim
 WORKDIR /app
 
 # Install only required runtime dependencies
-RUN apt-get update && apt-get install -y ca-certificates libssl-dev libpq-dev && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy the compiled Actix app binary
 COPY --from=builder /app/target/release/web_application ./web_application
@@ -47,9 +53,8 @@ COPY --from=builder /app/javascript ./javascript
 COPY --from=builder /app/css ./css
 COPY --from=builder /app/templates ./templates
 COPY --from=builder /app/migrations ./migrations
+COPY --from=builder /app/diesel.toml ./diesel.toml
 
-# Expose app port
 EXPOSE 8000
 
-# Run Actix app
 CMD ["./web_application"]

@@ -100,11 +100,33 @@
         grid-template-columns: 1fr;
       }
     }
+
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 0;
+      margin-bottom: 1rem;
+    }
+
+    .header-item {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #333;
+    }
+    
+    #username-display {
+      flex-grow: 1; /* Allows username to take up available space */
+      text-align: left;
+    }
   </style>
 </head>
 <body>
   <div class="mainContainer">
-    <div id="header-placeholder"></div>
+    <header class="app-header">
+      <div id="username-display" class="header-item"></div>
+      <div id="header-placeholder"></div>
+    </header>
 
     <div class="todo-app-container">
       <div class="item-list-section">
