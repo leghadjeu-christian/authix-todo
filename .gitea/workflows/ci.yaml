@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: [self-hosted, act-runner]
+    env:
+      DOCKER_HOST: tcp://localhost:2375
+      GIT_USERNAME: gitea_admin
+      GIT_PASSWORD: admin123
+    steps:
+      - name: Install prerequisites
+        run: |
+          apk update || true
+          apk add --no-cache nodejs npm curl git docker-cli openssh-client || true
+
+      - name: Checkout application repository
+        uses: actions/checkout@v3
+
+      - name: Verify Docker daemon
+        run: docker -H tcp://localhost:2375 version
+
+      - name: Set IMAGE TAG
+        id: vars
+        run: echo "TAG=$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
+
+      - name: Build Docker image
+        run: docker -H tcp://localhost:2375 build -t registry.local/infra/actix-todo:${TAG} .
+
+      - name: Push Docker image 
+        run: docker -H tcp://localhost:2375 push registry.local/infra/actix-todo:${TAG}
+
+      - name: Checkout infra repo
+        run: |
+          git clone https://gitea.local/gitea_admin/infra.git infra
+          cd infra
+          git config user.email "ci@gitea.local"
+          git config user.name "Gitea CI"
+          git config --global http.sslVerify false
+
+      - name: Update manifests with new image
+        run: |
+          cd infra
+          sed -i "s|registry.local/infra/actix-todo:.*|registry.local/infra/actix-todo:${TAG}|g" k8s/deployment.yaml
+          git add k8s/deployment.yaml
+          git commit -m "chore: update actix-todo image to ${TAG}" || echo "No changes to commit"
+          git push https://$GIT_USERNAME:$GIT_PASSWORD@gitea.local/gitea_admin/infra.git main
